@@ -1,4 +1,4 @@
-import { Book, Specialty, BookTransaction } from "../models/index.js";
+import {Book, Specialty, BookTransaction, TransactionMetadata} from "../models/index.js";
 import { Op, Sequelize } from "sequelize";
 
 /**
@@ -6,7 +6,7 @@ import { Op, Sequelize } from "sequelize";
  */
 export const addBook = async (req, res) => {
     try {
-        const { title, author, isbn, published_year, specialty_id, available_copies, image_url } = req.body;
+        const { title, author, isbn, published_year, specialty_id, available_copies, image_url, description } = req.body;
 
         // Validations
         if (!title || !author) {
@@ -17,6 +17,7 @@ export const addBook = async (req, res) => {
             title,
             author,
             isbn,
+            description,
             published_year,
             specialty_id: specialty_id || null,
             available_copies: available_copies || 1,
@@ -36,7 +37,7 @@ export const addBook = async (req, res) => {
 export const updateBook = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, author, isbn, published_year, specialty_id, available_copies, image_url } = req.body;
+        const { title, author, isbn, published_year, specialty_id, available_copies, image_url, description } = req.body;
 
         const book = await Book.findByPk(id);
         if (!book) return res.status(404).json({ error: "Book not found" });
@@ -46,6 +47,7 @@ export const updateBook = async (req, res) => {
             title: title ?? book.title,
             author: author ?? book.author,
             isbn: isbn ?? book.isbn,
+            description: description ?? book.description,
             published_year: published_year ?? book.published_year,
             specialty_id: specialty_id ?? book.specialty_id,
             available_copies: available_copies ?? book.available_copies,
@@ -143,22 +145,41 @@ export const getMostBorrowedBooks = async (req, res) => {
                 {
                     model: BookTransaction,
                     as: "transactions",
-                    attributes: []
-                }
+                    attributes: [],
+                    required: false,
+                },
+                {
+                    model: Specialty,
+                    as: "specialty",
+                    attributes: ["specialty_name", "specialty_id"],
+                    required: false,
+                },
             ],
             attributes: [
-                "id",
+                "book_id",
                 "title",
                 "author",
+                "description",
+                "image_url",
                 "available_copies",
                 [
-                    Sequelize.fn("COUNT", Sequelize.col("transactions.id")),
-                    "borrow_count"
-                ]
+                    Sequelize.literal(
+                        'COUNT("transactions"."transaction_id")'
+                    ),
+                    "borrow_count",
+                ],
             ],
-            group: ["Book.id"],
+            group: [
+                '"Book"."book_id"',
+                '"Book"."title"',
+                '"Book"."author"',
+                '"Book"."available_copies"',
+                '"specialty.specialty_name"',
+                '"specialty.specialty_id"'
+            ],
             order: [[Sequelize.literal("borrow_count"), "DESC"]],
-            limit: 10
+            limit: 10,
+            subQuery: false,
         });
 
         res.json(books);
@@ -175,10 +196,23 @@ export const getLastBorrowedBooks = async (req, res) => {
                 {
                     model: Book,
                     as: "book",
-                    attributes: ["id", "title", "author", "available_copies"]
-                }
+                    attributes: ["book_id", "title", "author", "available_copies", "description"],
+                    include: [
+                        {
+                            model: Specialty,
+                            as: "specialty",
+                            attributes: ["specialty_name", "specialty_id"],
+                            required: false,
+                        },
+                    ]
+                },
+                {
+                    model: TransactionMetadata,
+                    as: "metadata",
+                    attributes: ["metadata_id", "action_at"]
+                },
             ],
-            order: [["borrowed_at", "DESC"]],
+            // order: [["metadata.action_at", "DESC"]],
             limit: 10
         });
 
@@ -196,7 +230,15 @@ export const getAvailableBooks = async (req, res) => {
                 available_copies: {
                     [Op.gt]: 0
                 }
-            }
+            },
+            include: [
+                {
+                    model: Specialty,
+                    as: "specialty",
+                    attributes: ["specialty_name", "specialty_id"],
+                    required: false,
+                },
+            ]
         });
 
         res.json(books);

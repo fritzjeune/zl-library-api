@@ -46,16 +46,16 @@ Resident.belongsTo(User, {
 });
 
 // Specialty -> Book
-Specialty.hasMany(Book, { foreignKey: "specialty_id" });
-Book.belongsTo(Specialty, { foreignKey: "specialty_id" });
+Specialty.hasMany(Book, { foreignKey: "specialty_id", as: "specialty" });
+Book.belongsTo(Specialty, { foreignKey: "specialty_id", as: "specialty" });
 
 // Resident -> BookTransaction
 Resident.hasMany(BookTransaction, { foreignKey: "resident_id" });
 BookTransaction.belongsTo(Resident, { foreignKey: "resident_id" });
 
 // Book -> BookTransaction
-Book.hasMany(BookTransaction, { foreignKey: "book_id" });
-BookTransaction.belongsTo(Book, { foreignKey: "book_id" });
+Book.hasMany(BookTransaction, { foreignKey: "book_id", as: "transactions"  });
+BookTransaction.belongsTo(Book, { foreignKey: "book_id", as: "book" });
 
 // TransactionStatus -> BookTransaction
 TransactionStatus.hasMany(BookTransaction, { foreignKey: "status_id" });

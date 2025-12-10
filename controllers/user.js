@@ -12,12 +12,14 @@ const ALLOWED_EMAIL_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || "pih.org";
    Helper: generate JWT
 ------------------------------------------------------- */
 function generateToken(user) {
+    console.log(user)
     return jwt.sign(
         {
-            id: user.id,
+            id: user.user_id,
             email: user.email,
-            role: user.role,
-            user_type: user.user_type,
+            role: user.role_id,
+            user_type: user.user_type_id,
+            resident_id: user.resident?.resident_id
         },
         JWT_SECRET,
         { expiresIn: "7d" }
@@ -97,7 +99,7 @@ export const loginUser = async (req, res) => {
     try {
         const { email, password, two_factor_token } = req.body;
 
-        const user = await User.scope("withPassword").findOne({ where: { email } });
+        const user = await User.scope("withPassword").findOne({ where: { email }, include: [{ model: Resident, as: "resident", attributes: ["resident_id"]}] });
 
         if (!user || user.is_disabled) {
             return res.status(400).json({ error: "Invalid credentials" });

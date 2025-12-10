@@ -26,11 +26,15 @@ async function createMetadata(transactionId, status_id, staff_id, notes = null) 
 
 // Borrow a book
 export const borrowBook = async (req, res) => {
-    console.log(req.user)
-    const { book_id, resident_id, due_date } = req.body;
-    const staff_id = req.user.user_id;
+    const book_id = req.params.book_id || req.body.book_id;
+    const { resident_id, due_date } = req.body;
+    const user = req.user;
 
     try {
+        if (parseInt(user.user_type) === 1 && parseInt(user.resident_id) !== parseInt(resident_id)) {
+            return res.status(400).json({message: "can't borrow for another resident!"})
+        }
+
         const book = await Book.findByPk(book_id);
         if (!book) return res.status(404).json({ message: "Book not found" });
         if (book.available_copies < 1)
@@ -64,7 +68,7 @@ export const borrowBook = async (req, res) => {
         })).toJSON();
 
         await book.decrement("available_copies", { by: 1 });
-        await createMetadata(transaction.transaction_id, 1, staff_id);
+        await createMetadata(transaction.transaction_id, 1, user.user_id);
 
         res.json({ message: "Book borrowed successfully", transaction });
     } catch (error) {

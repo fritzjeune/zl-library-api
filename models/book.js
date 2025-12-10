@@ -8,6 +8,7 @@ export default (sequelize) => {
         isbn: { type: DataTypes.STRING(20), unique: true },
         published_year: DataTypes.INTEGER,
         image_url: DataTypes.TEXT,
+        description: DataTypes.TEXT,
         available_copies: { type: DataTypes.INTEGER, defaultValue: 1 },
         created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     }, { tableName: "books", timestamps: false });

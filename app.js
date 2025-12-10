@@ -21,6 +21,7 @@ import usersRouter from "./routes/users.js";
 import bookRouter from "./routes/book.js";
 import residentRouter from "./routes/resident.js";
 import transactionRouter from "./routes/transaction.js";
+import uploadRouter from "./routes/upload.js";
 
 // ---------------------------
 // Express app setup
@@ -44,13 +45,16 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "uploads/books")));
+app.use("/books", express.static(path.join(__dirname, "uploads/books")));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/books', bookRouter);
 app.use("/residents", residentRouter);
 app.use("/transactions", transactionRouter);
+app.use("/upload", uploadRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
