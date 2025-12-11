@@ -13,6 +13,7 @@ export default (sequelize) => {
         },
         first_name: { type: DataTypes.STRING(100), allowNull: false },
         last_name: { type: DataTypes.STRING(100), allowNull: false },
+        bio: { type: DataTypes.STRING(), allowNull: false },
         grade: { type: DataTypes.INTEGER, validate: { min: 1, max: 5 } },
         created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     }, { tableName: "residents", timestamps: false });

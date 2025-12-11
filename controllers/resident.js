@@ -7,7 +7,7 @@ const ALLOWED_DOMAINS = ["pih.org"];
  */
 export const addResident = async (req, res) => {
     try {
-        const { first_name, last_name, email, phone, specialty_id, grade } = req.body;
+        const { first_name, last_name, email, phone, specialty_id, grade, bio } = req.body;
 
         // Validations
         if (!first_name || !last_name || !email) {
@@ -39,6 +39,7 @@ export const addResident = async (req, res) => {
             phone,
             specialty_id: specialty_id || null,
             grade: grade || null,
+            bio: bio || null
         });
 
         res.status(201).json(resident);
@@ -54,7 +55,7 @@ export const addResident = async (req, res) => {
 export const updateResident = async (req, res) => {
     try {
         const { id } = req.params;
-        const { first_name, last_name, email, phone, specialty_id, grade } = req.body;
+        const { first_name, last_name, email, phone, specialty_id, grade, bio } = req.body;
 
         const resident = await Resident.findByPk(id);
         if (!resident) return res.status(404).json({ error: "Resident not found" });

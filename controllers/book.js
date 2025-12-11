@@ -1,5 +1,6 @@
 import {Book, Specialty, BookTransaction, TransactionMetadata} from "../models/index.js";
 import { Op, Sequelize } from "sequelize";
+import specialty from "../models/specialty.js";
 
 /**
  * Add a new book
@@ -86,7 +87,7 @@ export const getBook = async (req, res) => {
     try {
         const { id } = req.params;
         const book = await Book.findByPk(id, {
-            include: [{ model: Specialty, attributes: ["specialty_name"] }],
+            include: [{ model: Specialty, as: "specialty",  attributes: ["specialty_name"] }],
         });
         if (!book) return res.status(404).json({ error: "Book not found" });
 
@@ -120,7 +121,7 @@ export const getAllBooks = async (req, res) => {
 
         const { rows, count } = await Book.findAndCountAll({
             where,
-            include: [{ model: Specialty, attributes: ["specialty_name"] }],
+            include: [{ model: Specialty, as: "specialty", attributes: ["specialty_name"] }],
             limit,
             offset,
             order: [[sort, order.toUpperCase()]],
@@ -191,7 +192,7 @@ export const getMostBorrowedBooks = async (req, res) => {
 
 export const getLastBorrowedBooks = async (req, res) => {
     try {
-        const transactions = await BookTransaction.findAll({
+        let transactions = await BookTransaction.findAll({
             include: [
                 {
                     model: Book,
@@ -216,12 +217,58 @@ export const getLastBorrowedBooks = async (req, res) => {
             limit: 10
         });
 
+        // transactions = transactions.map(t => t.book)
+        transactions = [
+            ...new Map(transactions.map(t => [t.book.book_id, t.book])).values()
+        ];
+
         res.json(transactions);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch last borrowed books" });
     }
 };
+
+export const borrowedBookByResident = async (req, res) => {
+    try {
+        const resident_id = req.params.resident_id;
+
+        if (!resident_id) return res.status(400).json({ message : "A resident Id must be given"})
+        let transactions = await BookTransaction.findAll({
+            include: [
+                {
+                    model: Book,
+                    as: "book",
+                    required: false,
+                    include : [
+                        {
+                            model: Specialty,
+                            as: "specialty",
+                            attributes: ["specialty_name", "specialty_id"],
+                            required: false,
+                        },
+                    ]
+                },
+            ],
+            where: {
+                resident_id: {
+                    [Op.eq]: resident_id
+                },
+                status_id: {
+                    [Op.eq]: 1
+                }
+            },
+        });
+
+        transactions = [
+            ...new Map(transactions.map(t => [t.book.book_id, t.book])).values()
+        ];
+        res.status(200).json(transactions);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch available books by resident" });
+    }
+}
 
 export const getAvailableBooks = async (req, res) => {
     try {
